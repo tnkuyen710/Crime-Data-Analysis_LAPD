@@ -1,5 +1,7 @@
-# Crime-Data-Analysis_LAPD 🕵️‍♂️🚔📈📊
+# Data Science with R Project 🕵️‍♂️🚔📈📊
 
-This project focuses on the analysis of crime data in Los Angeles from 2020 to 2023. The dataset provides detailed information on various crime incidents, involving victims aged 18 and older. By examining this extensive dataset, we will navigate through a wealth of information—identifying valuable insights while filtering out less relevant data.
+This project focuses on the analysis of crime data in Los Angeles, with the dataset sourced from Los Angeles Police Department (LAPD), from 2020 to 2023 using R. The dataset provides detailed information on various crime incidents, involving victims aged 18 and older. By examining this extensive dataset, we will navigate through a wealth of information—identifying valuable insights while filtering out less relevant data.
+
+The analysis began with **data cleaning and preprocessing**, where missing values were handled, data types were standardized, and irrelevant or redundant variables were removed. String matching techniques were used to correct inconsistencies in categorical variables such as crime type and location descriptions. Next, **exploratory data analysis (EDA)** was conducted to identify temporal and spatial crime patterns. To gain deeper insights, **statistical analysis** was applied to assess correlations between crime types, locations, and external factors. **Hypothesis testing** and regression analysis were used to investigate relationships between variables, such as whether certain neighborhoods experienced higher crime rates during specific times.
 
 Approaching the analysis with a detective’s mindset, we will uncover patterns, trends, and potential factors influencing crime rates. The goal is to derive meaningful insights that contribute to a deeper understanding of crime in Los Angeles and inform potential strategies for crime prevention and public safety.
