@@ -1,0 +1,1057 @@
+---
+title: "TechAcademy WiSe 24/25<br>Project: Data Science with R 💻🔎📈📊"
+author: "Ngoc Khanh Uyen Tran"
+output: html_document
+date: "*Last updated on `r Sys.Date()`*"
+---
+
+```{r setup, include=FALSE}
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+
+getwd()
+setwd("/Users/tracie/Desktop/academic/goethe/techacademy/data-science-r-beginner-tnkuyen710")
+
+```
+
+```{r}
+
+#Loading libraries
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+
+```
+
+# Exploratory Data Analysis (EDA)
+
+### 🗂️⏳ Getting started: Loading datasets into working directory
+
+```{r}
+
+dataset_crime <- read_csv("crime_2020_2023.csv")
+dataset_weather <- read_csv("weather_2020_2023.csv")
+
+```
+
+# Discovering the datasets
+
+## 🔎📝 Initial Exploration Tasks
+
+### How many variables are in each dataset?
+
+#### Crime dataset
+
+```{r}
+
+str(dataset_crime)
+summary(dataset_crime)
+
+#Checking number of variables
+ncol(dataset_crime) 
+
+```
+
+**🧐 ➡️ There are 20 variables in Crime datase**
+
+#### Weather dataset
+
+```{r}
+
+str(dataset_weather)
+summary(dataset_weather)
+
+#Checking number of variables
+ncol(dataset_weather) 
+
+```
+
+**🧐 ➡ There are 5 variables in Weather dataset**
+
+### How many observations are there for each variable?
+
+#### Crime dataset
+
+```{r}
+
+nrow(dataset_crime) 
+
+```
+
+**🧐 ➡ There are 89335 observations in Crime dataset**
+
+#### Weather dataset
+
+```{r}
+
+nrow(dataset_weather) 
+
+```
+
+**🧐 ➡ There are 1461 observations in Weather dataset**
+
+### Interpret 5 variables from the Crime dataset
+
+1.  "DR_NO": ID number of the report
+2.  "Date Rptd": Date reported
+3.  "DATE OCC": Date of occurrence
+4.  "TIME OCC": Time of occurrence
+5.  "AREA NAME": Name of the area where the crime occured
+6.  "Crm Cd": Crime code
+7.  "LAT": Latitude
+8.  "LON": Longtitude
+
+### What types of variables are present in the dataset?
+
+```{r}
+
+sapply(dataset_crime, class) 
+sapply(dataset_weather, class) 
+
+```
+
+### Are there any issues with the variable types that could complicate future analysis?
+
+#### Crime dataset
+
+"Date Rptd" & DATE OCC" are stored as character, instead of date data "Category" is stored as character, but could be better if being stored as categorical data "Vict Age" is stored as numeric, but there might be error related to negative value due to human error when inputting
+
+#### Weather dataset
+
+No potential issues founded
+
+### How many missing values are there per variable?
+
+#### Crime dataset
+
+```{r}
+
+filtered_crime_missing_value <- sapply(dataset_crime, function(x) sum(is.na(x)))
+filtered_crime_missing_value
+
+# Filter only variables with missing value 
+filtered_crime_missing_value[filtered_crime_missing_value > 0] 
+
+```
+
+#### Weather dataset
+
+```{r}
+
+filtered_weather_missing_value <- sapply(dataset_weather, function(x) sum(is.na(x)))
+filtered_weather_missing_value
+
+# Filter only variables with missing value 
+filtered_crime_missing_value[filtered_weather_missing_value > 0] 
+
+```
+
+**🧐 ➡ There is no missing value in Weather dataset❗**
+
+### Which variables have the highest percentage of missing values?
+
+#### Crime dataset
+
+```{r}
+
+# Calculating percentage of containing missing value of each variable
+missing_value_crime_percentage <- sapply(dataset_crime, function(x) sum(is.na(x)) / length(x) * 100) 
+
+# Sorting variables with missing value from highest to lowest
+sort(missing_value_crime_percentage[missing_value_crime_percentage > 0], decreasing = TRUE) 
+
+```
+
+## 🔢️📊 Initial Data Visualization
+
+### Plot a histogram of age
+
+```{r}
+
+dataset_crime$`Vict Age` <- as.numeric(dataset_crime$`Vict Age`)
+
+ggplot(dataset_crime, aes(`Vict Age`)) +
+  geom_histogram(fill = "pink", color = "black", binwidth = 5) +  
+  labs(title="Distribution of Victim Age",
+       x="Age",
+       y="Number of cases") +
+  theme_minimal() 
+
+```
+
+### Plot a barplot of descent and note down the 5 most affected victim descents
+
+```{r}
+
+ggplot(dataset_crime, aes(x = `Vict Descent`)) +
+  geom_bar(fill = "lightblue", color = "black") +
+  labs(title = "Distribution of Victim Descent",
+       x = "Victim Descent",
+       y = "Number of Cases") +
+  theme_minimal()
+
+```
+
+### Plot the victim's gender distribution
+
+```{r}
+
+# Calculating percentage of each gender
+vict_gender_counts <- dataset_crime %>%
+  count(`Vict Sex`) %>%
+  mutate(`Vict Gender Percentage` = n / sum(n) * 100)
+
+# Plot the gender distribution using pie chart
+ggplot(vict_gender_counts, aes(x = "", y = `Vict Gender Percentage`, fill = `Vict Sex`)) +
+  geom_bar(stat = "identity", width = 1, color = "black") +
+  coord_polar(theta = "y") +
+  geom_text(aes(label = paste0(round(`Vict Gender Percentage`, 1), "%")), 
+            position = position_stack(vjust = 0.5), color = "white") +
+  labs(title = "Distribution of Victim Gender in Percentage",
+       x = "",
+       y = "",
+       fill = "Victim Gender") +
+  scale_fill_manual(values = c("lightblue","orange", "lightpink", "lightgreen")) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.y = element_blank(),  
+        axis.title.y = element_blank()) 
+
+```
+
+### How many cases remain open? Create a bar chart to visualize this
+
+```{r}
+
+# Checking how many kind of status
+table(dataset_crime$`Status Desc`)
+
+# Counting number of cases of each status
+case_status_counts <- dataset_crime %>%
+  count(`Status Desc`)
+
+# Filter cases remain open
+open_cases <- case_status_counts %>%
+  filter(`Status Desc` == "Invest Cont") %>%
+  pull(n)
+
+# Plot the case status using bar chart
+ggplot(case_status_counts, aes(x = `Status Desc`, y = n, fill = `Status Desc`)) +
+  geom_bar(stat = "identity", color = "black", width = 0.5) +
+  labs(title = "Distribution of Current Investigation Status",
+       x = "Case Status",
+       y = "Number of Cases") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+```
+
+### What do you think about this plot? Write down your thoughts about what's good and especially bad about this plot
+
+![](https://techacademy.gitbook.io/~gitbook/image?url=https%3A%2F%2F825077565-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252Fy9vTgCprl10E1m8Ff5QP%252Fuploads%252FoYjQEEJxVG0TnuqWE4Hm%252Fimage.png%3Falt%3Dmedia%26token%3Dba41b663-42f0-4a14-a281-12a4e94c620f&width=768&dpr=2&quality=100&sign=83d687bd&sv=2){width="350px"}
+
+✅ : - Provide all needed information of the data - Readable and understandable
+
+❌ : - Could have been better if there is annotation to clarify exactly how many cases of each age group *(see below for a revised version)*
+
+#### ✨ Revised version:
+
+```{r}
+
+dataset_crime$AgeGroup <- cut(dataset_crime$`Vict Age`, 
+                              breaks = seq(0, 100, by = 10), 
+                              right = FALSE, 
+                              labels = paste(seq(0, 95, by = 10), seq(5, 100, by = 10), sep = "-"))
+
+ggplot(dataset_crime, aes(AgeGroup)) +
+  geom_bar(fill = "blue", color = "black") +  
+  labs(title="Distribution of Victim Age",
+       x="Age Group",
+       y="Number of cases") +
+  theme_minimal() +
+  geom_text(stat='count', aes(label=after_stat(count)), vjust=-0.5, size=3)
+
+```
+
+# Data Cleaning and Transformation
+
+## 👮🧹 Cleaning the Crime Dataset
+
+### Review the dataset and drop any columns that are mostly empty, irrelevant or unlikely to be used in the analysis
+
+As we analyzed above, the variables having the most missing values are:
+
+-   **Crm Cd 4**
+-   **Crm Cd 3**
+-   **Crm Cd 2**
+-   **Weapon Desc**
+
+Furthermore, below are columns that will also be removed as they are irrelevant or less likely to be used in the analysis:
+
+-   **Premis Desc** (Might be redundant)
+-   **Location** (Full address might not be necessary as we also have geocoordinates: LAT & LON)
+
+**🧐 ➡ Therefore, we will remove those columns in the next step of cleaning the dataset.**
+
+### Make the column names lowercase and remove any spaces and replace them with underscores "\_" to follow naming conventions. You can also choose entirely new names that are more meaningful
+
+```{r}
+
+# Convert column names to lowercase and replace spaces with "_"
+colnames(dataset_crime) <- tolower(gsub(" ", "_", colnames(dataset_crime)))
+print(colnames(dataset_crime))
+
+```
+
+```{r}
+# Filter columns that have many missing value, are irrelevant or less likely to be used in the analysis 
+dataset_crime_cleaned <- dataset_crime %>%
+  select(-crm_cd_2, -crm_cd_3, -crm_cd_4, -weapon_desc, -location, -premis_desc) %>%
+  # Rename the remaining columns
+  rename(
+    report_number = dr_no,
+    date_reported = date_rptd,
+    date_occurrence = date_occ,
+    time_occurrence = time_occ,
+    crime_code_description = crm_cd_desc,
+    victim_age = vict_age,
+    victim_sex = vict_sex,
+    victim_descent = vict_descent,
+    status_description = status_desc,
+    crime_code_1 = crm_cd_1,
+    latitude = lat,
+    longitude = lon
+  )
+
+# Check the updated dataset
+str(dataset_crime_cleaned)
+
+```
+
+### Replace any missing values in the dataset with NA
+
+```{r}
+
+# Replace any missing values with NA 
+dataset_crime_cleaned[is.na(dataset_crime_cleaned)] <- NA
+
+# Check the updated dataset
+str(dataset_crime_cleaned)
+
+```
+
+### Convert the date column into a proper date format
+
+```{r}
+
+# Revise the date format
+dataset_crime_cleaned <- dataset_crime_cleaned %>%
+  mutate(
+    date_reported = as.Date(date_reported, format = "%m/%d/%Y"),
+    date_occurrence = as.Date(date_occurrence, format = "%m/%d/%Y")
+  )
+
+# Check the updated columns
+str(dataset_crime_cleaned$date_reported)
+str(dataset_crime_cleaned$date_occurrence)
+
+```
+
+### Filter out any entries with invalid geocoordinates (LAT and LON)
+
+```{r}
+
+# Check rows with missing or invalid geocoordinates
+invalid_geo_coords <- dataset_crime_cleaned %>%
+  filter(
+    is.na(latitude) | is.na(longitude) | 
+    latitude < -90 | latitude > 90 | 
+    longitude < -180 | longitude > 180
+  )
+
+# Check if there are any invalid rows and print them
+if (nrow(invalid_geo_coords) > 0) {
+  print("Rows with invalid geocoordinates:")
+  print(invalid_geo_coords)
+    # Filter out rows with invalid geocoordinates values
+    dataset_crime_cleaned <- dataset_crime_cleaned %>%
+      filter(
+        !is.na(latitude) & !is.na(longitude) & 
+        latitude >= -90 & latitude <= 90 & 
+        longitude >= -180 & longitude <= 180
+  )
+    # Check the updated columns
+    str(dataset_crime_cleaned$latitude)
+    str(dataset_crime_cleaned$longitude)
+} else {
+  print("No invalid geocoordinates found.")
+}
+
+```
+
+**🧐 ➡ There is no invalid in invalid geocoordinates❗**
+
+### Filter out entries with invalid age (age = 0)
+
+```{r}
+
+# Filter out rows with age = 0
+dataset_crime_cleaned <- dataset_crime_cleaned %>%
+  filter(victim_age != 0)
+
+# Check the updated column
+str(dataset_crime_cleaned$victim_age)
+
+#Check if there are any age = 0 entries
+any(dataset_crime_cleaned$victim_age == 0)  
+
+```
+
+```{r}
+
+str(dataset_crime_cleaned)
+
+```
+
+## 🌦🧹 Cleaning the Weather Dataset️
+
+### Convert the date column into a proper date format
+
+```{r}
+
+# Check the class of the datetime column, format if needed
+if (class(dataset_weather$datetime) != "Date") {
+  dataset_weather$datetime <- as.Date(dataset_weather$datetime, format="%Y-%m-%d")
+      # Check the updated columns
+      str(dataset_weather$datetime)
+} else {
+  print("The datetime column is already in Date format.")
+}
+
+```
+
+# Data Visualization
+
+## 🚨📈 Crime Rate Over Time
+
+### Plot the number of cases over time; Add title and axis labels to your plot(s)
+
+```{r}
+
+#Line & Point plot
+ggplot(dataset_crime_cleaned, aes(x = `date_occurrence`)) +
+  geom_line(stat = "count", color = "navy") +  
+  geom_point(stat = "count", color = "red", size = 0.15) +  
+  scale_x_date(
+    breaks = "6 months",  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  labs(title = "Number of Cases Over Time",
+       x = "Date",
+       y = "Number of Cases") +
+  theme_minimal() 
+
+```
+
+```{r}
+
+#Barplot
+ggplot(dataset_crime_cleaned, aes(x = `date_occurrence`)) +
+  geom_bar(fill = "navy") +  
+  scale_x_date(
+    breaks = "6 months",  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  labs(title = "Number of Cases Over Time",
+       x = "Date",
+       y = "Number of Cases") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
+```
+
+### Try different themes
+
+```{r}
+
+#Dark Theme
+ggplot(dataset_crime_cleaned, aes(x = `date_occurrence`)) +
+  geom_line(stat = "count") +  
+  scale_x_date(
+    breaks = "6 months",  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  labs(title = "Number of Cases Over Time",
+       x = "Date",
+       y = "Number of Cases") +
+  theme_dark()
+
+#Excel Theme
+ggplot(dataset_crime_cleaned, aes(x = `date_reported`)) +
+  geom_line(stat = "count", color = "darkgreen") +  
+  scale_x_date(
+    breaks = "6 months",  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  labs(title = "Number of Cases Over Time",
+       x = "Date",
+       y = "Number of Cases") +
+  theme_excel()
+
+```
+
+### Plot the rolling mean over 30 days over time
+
+```{r}
+
+install.packages("zoo")
+library(zoo)
+
+```
+
+```{r}
+
+# Count number of cases per day
+daily_cases <- dataset_crime_cleaned %>%
+  group_by(date_occurrence) %>%
+  summarise(Number_of_Cases = n()) %>%
+  arrange(date_occurrence)
+
+# Compute the 30-day rolling mean
+daily_cases <- daily_cases %>%
+  mutate(RollingMean_30d = rollmean(Number_of_Cases, k = 30, fill = NA, align = "right"))
+
+# Plot the rolling mean over time
+ggplot(na.omit(daily_cases), aes(x = date_occurrence)) +
+  geom_line(aes(y = RollingMean_30d), color = "red", linewidth = 0.25) +  
+  labs(title = "Number of Cases Over Time (Rolling Mean)",
+       x = "Date",
+       y = "Number of Cases") +
+    scale_x_date(
+    breaks = seq(min(dataset_crime_cleaned$date_occurrence), 
+                 max(dataset_crime_cleaned$date_occurrence), 
+                 by = "6 months"),  
+    labels = scales::date_format("%Y-%m")
+  ) +
+  theme_minimal()
+
+```
+
+### Plot the rolling mean over 30 days grouped by the five most affected victim descents
+
+```{r}
+
+dataset_crime_cleaned$date_occurrence <- as.Date(dataset_crime_cleaned$date_occurrence, format = "%m/%d/%Y")
+
+# The five most affected victim descents
+top_victims <- dataset_crime_cleaned %>%
+  group_by(victim_descent) %>%
+  summarise(Number_of_Cases = n()) %>%
+  top_n(5, Number_of_Cases) %>%
+  pull(victim_descent)
+
+# Filter the dataset to include only the top 5 victim descents
+filtered_data <- dataset_crime_cleaned %>%
+  filter(victim_descent %in% top_victims)
+
+# Count number of cases per day, grouped by victim descent
+daily_cases <- filtered_data %>%
+  group_by(date_occurrence, victim_descent) %>%
+  summarise(Number_of_Cases = n(), .groups = "drop") %>%
+  arrange(date_occurrence)
+
+# Compute the 30-day rolling mean 
+daily_cases <- daily_cases %>%
+  group_by(victim_descent) %>%
+  mutate(RollingMean_30d = rollmean(Number_of_Cases, k = 30, fill = NA, align = "right")) 
+
+# Plot the rolling mean over time for each of the five victim descents
+ggplot(na.omit(daily_cases), aes(x = date_occurrence, y = RollingMean_30d, color = victim_descent, group = victim_descent)) +
+  geom_line(linewidth = 0.25) +  
+  labs(title = "30-Day Rolling Mean of Cases Over Time by Top Five Victim Descent",
+       x = "Date",
+       y = "Number of Cases (Rolling Mean)",
+       color = "Victim Descent") +
+  scale_x_date(
+    breaks = seq(min(daily_cases$date_occurrence), max(daily_cases$date_occurrence), by = "6 months"),  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  theme_minimal() 
+
+```
+
+## 🚔💥 Crime Types
+
+```{r}
+
+# Count the number of crime types
+crime_types <- length(unique(dataset_crime_cleaned$category))
+
+# Show the result
+print(paste("Number of crime types:", `crime_types`))
+
+# Count the number of cases for each crime type
+crime_types_counts <- dataset_crime_cleaned %>%
+  group_by(category) %>%
+  summarise(Number_of_Cases = n(), .groups = "drop")
+crime_types_counts
+
+```
+
+### Plot the ten most common crime types in descending order
+
+```{r}
+
+# Count the occurrences of each crime type
+crime_counts <- dataset_crime_cleaned %>%
+  count(category) %>%
+  arrange(desc(n)) %>%
+  top_n(10, n)
+
+# Plot the ten most common crime types
+ggplot(crime_counts, aes(x = reorder(category, n), y = n)) +
+  geom_bar(stat = "identity", fill = "purple", color = "black", width = 0.5) +
+  labs(title = "Top 10 Most Common Crime Types",
+       x = "Crime Type",
+       y = "Number of Cases") +
+  coord_flip() +  # Flip the axes for better readability
+  theme_minimal()
+
+```
+
+### Plot the percentage of men and women affected by the 10 most common crime types
+
+```{r}
+
+# Remove NA values and count the number of cases by crime type and gender
+crime_gender_counts <- dataset_crime_cleaned %>%
+  filter(category %in% names(sort(table(dataset_crime_cleaned$category), decreasing = TRUE)[1:10])) %>%
+  filter(!is.na(victim_sex)) %>%
+  group_by(category, victim_sex) %>%
+  summarize(Number_of_Cases = n(), .groups = "drop")
+
+# Calculate the percentage of men and women for each crime type
+crime_gender_percentage <- crime_gender_counts %>%
+  group_by(category) %>%
+  mutate(Percentage = (Number_of_Cases / sum(Number_of_Cases)) * 100)
+
+# Plot the percentage of men and women for the 10 most common crime types
+ggplot(crime_gender_percentage, aes(x = reorder(category, Percentage), y = Percentage, fill = victim_sex)) +
+  geom_bar(stat = "identity", position = "stack", color = "black", width = 0.5) +
+  scale_fill_manual(values = c("pink", "lightblue", "lightgreen", "yellow")) + 
+  labs(title = "Distribution of Gender for Top 10 Crime Types",
+       x = "Crime Type",
+       y = "Percentage",
+       fill = "Gender") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+
+# Group by gender and crime category & Count the number of occurrences
+crime_gender_counts <- dataset_crime_cleaned %>%
+  filter(!is.na(victim_sex)) %>%
+  group_by(victim_sex, category) %>%
+  summarise(count = n(), .groups = "drop") 
+
+# Create the plot
+ggplot(crime_gender_counts, aes(x = reorder(category, count), y = count, fill = victim_sex)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  labs(
+    title = "Distribution of Crime Types by Gender",  
+    x = "Crime Type",                 
+    y = "Numnber of Cases",             
+    fill = "Victim Gender"                   
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+```
+
+# Grouping and Merging Data
+
+## 🤔📝 Hypothesis: *"Hot temperatures directly influence aggression and violence."*❓
+
+### Find out the crime count per day
+
+```{r}
+
+# Convert 'date_reported' to Date type (assuming 'date_reported' is the date column)
+dataset_crime_cleaned$date_reported <- as.Date(dataset_crime_cleaned$date_occurrence, format = "%m/%d/%Y")
+
+# Count the number of crimes per day
+crime_count_per_day <- dataset_crime_cleaned %>%
+  group_by(date_occurrence) %>%
+  summarise(crime_count = n(), .groups = "drop")
+
+# Show the result
+crime_count_per_day
+
+```
+
+### Merge daily temperatures and daily crime count
+
+```{r}
+
+dataset_weather$datetime <- as.Date(dataset_weather$datetime, format = "%m/%d/%Y")
+merged_data <- left_join(crime_count_per_day, dataset_weather, by = c("date_occurrence" = "datetime"))
+
+merged_data
+
+```
+
+# Linear Regression
+
+## 🎨📈 Visualization
+
+### Create a graph to visualize the Crime Count against the Temperature over the years
+
+```{r}
+
+merged_data$date_occurrence <- as.Date(merged_data$date_occurrence)
+
+# Calculate 30-day rolling mean for crime count per day and temperature
+merged_data <- merged_data %>%
+  arrange(date_occurrence) %>%
+  mutate(
+    rolling_crime_count = rollapply(crime_count, width = 30, FUN = mean, fill = NA, align = "right"),
+    rolling_temperature = rollapply(temp, width = 30, FUN = mean, fill = NA, align = "right")
+  )
+
+coeff <- 0.47
+
+# Create the plot
+ggplot(na.omit(merged_data), aes(x = date_occurrence)) +
+  geom_line(aes(y = rolling_crime_count, color = "Rolling Crime Count"), linewidth = 0.25) + 
+  geom_line(aes(y = rolling_temperature / coeff, color = "Rolling Temperature"), linewidth = 0.25) + 
+  labs(title = "Crime Count and Temperature Over Time (Rolling Mean)",
+       x = "Date", 
+       y = "Rolling Mean Value", 
+       color = "Legend") +
+  scale_color_manual(values = c("Rolling Crime Count" = "red", "Rolling Temperature" = "orange")) +
+  scale_y_continuous(
+    name = "Crime Count (Rolling Mean)",
+            breaks = seq(0, max(merged_data$rolling_crime_count, na.rm = TRUE), by = 10),
+    sec.axis = sec_axis(~ .*coeff, name = "Temperature (°C Rolling Mean)")
+  ) +
+  scale_x_date(
+    breaks = seq(min(merged_data$date_occurrence), max(merged_data$date_occurrence), by = "6 months"),  
+    labels = scales::date_format("%Y-%m") 
+  ) +
+  theme_minimal() +
+  theme(axis.text.y.left = element_text(margin = margin(l = 10)),
+        axis.text.y.right = element_text(margin = margin(r = 10)),
+        axis.title.y.right = element_text(angle = 90),
+        legend.title = element_blank())
+```
+
+### Create a simple linear regression for temperatures and crime count
+
+```{r}
+
+lm_model <- lm(crime_count ~ temp, data = merged_data)
+summary(lm_model)
+
+```
+
+```{r}
+
+install.packages("olsrr")
+library(olsrr)
+
+```
+
+```{r}
+
+lm_model <- lm(crime_count ~ temp, data = merged_data)
+ols_regress(lm_model)
+
+```
+
+### Interpret the variable (magnitude, significant, etc.)
+
+**1. Regression Equation**
+
+The estimated regression equation is:
+
+***y = 42.0108 + 0.2199 x temp***
+
+-   *y = Predicted crime count*
+
+-   *Intercept (42.0108): When temperature = 0°C, the expected crime count is approximately 42 crimes per day*
+
+-   *Slope (0.2199): For each 1°C increase in temperature, the crime count increases by 0.22 crimes per day on average*
+
+**2. Statistical Significance**
+
+-   The **p-value for temperature = 0.00117** tells us whether the relationship is statistically significant. A p-value this small (0.117%) means that there is very strong evidence against the null hypothesis, which suggests that temperature does have a real relationship with crime count. In other words, the likelihood of observing this result by chance is only 0.117%, making this a statistically significant relationship
+-   The **t-value = 3.253**, which measures how many standard errors the estimated coefficient is away from zero, is relatively high. A higher t-value indicates a stronger effect, and since it’s well above the typical critical values (usually around 2 or greater), this further supports that temperature has a statistically significant impact on crime count
+-   The **intercept is \< 2e-16**, meaning the baseline crime count (when temperature is zero) is well estimated by the model, with very low chance of this result being random.
+
+**3. Goodness of Fit (R-squared)**
+
+-   The **Multiple R-squared = 0.007199** and **Adjusted R-squared = 0.006518** suggest that only 0.72% of the variation in crime count is explained by temperature
+
+**4. Residual Analysis**
+
+-   The **Residual Standard Error (10.21)** means that the predicted crime count can deviate from the actual value by roughly ±10 crimes per day
+-   The **residuals range from -26.16 to 59.65**, showing that crime count has a wide spread that temperature alone does not fully capture
+
+**5. Conclusion**
+
+Temperature significantly affects crime count, but the effect size is small (0.22 crimes per °C). The model is weak at predicting crime count (low R² ≈ 0.72%), meaning other factors must be included for better accuracy, such as day of the week, seasonality, holidays, or socioeconomic factors.
+
+### Is it causal?
+
+A relationship is causal if changing one variable directly causes a change in another.
+
+The analysis suggests that temperature and crime count are associated, but correlation does not imply causation:
+
+-   The relationship is in fact statistically significant, but not high (p-value = 0.00117)
+-   Only 0.72% of crime count variability is explained by temperature (R² ≈ 0.72%). If temperature were a strong causal factor, R² would be much higher
+
+### Include more variables in the regression
+
+Adding variables: *"feelslike"*, *"humidity"*, *"windspeed"* to the regression
+
+```{r}
+
+lm_model_multi <- lm(crime_count ~ temp + feelslike + humidity + windspeed, data = merged_data)
+summary(lm_model_multi)
+
+```
+
+```{r}
+
+lm_model_multi <- lm(crime_count ~ temp + feelslike + humidity + windspeed, data = merged_data)
+ols_regress(lm_model_multi)
+
+```
+
+### Inteprete the variables
+
+**1. Regression Equation**
+
+The estimated regression equation is:
+
+***y = 41.75 − 2.30 × temp + 2.51 × feelslike − 0.0019 × humidity + 0.0414 × windspeed***
+
+-   *Intercept (41.75): When all weather variables are at zero, the predicted crime count is approximately 41.75 crimes per day*
+-   *Temperature (-2.30): Holding other factors constant, a 1°C increase in temperature decreases crime count by 2.30 crimes per day, though this result is not statistically significant (p = 0.211)*
+-   *Feels-like Temperature (2.51): A 1°C increase in the perceived temperature increases crime count by 2.51 crimes per day, but this effect is not statistically significant (p = 0.171)*
+-   *Humidity (-0.0019): Humidity has a negligible impact on crime count, with an estimated decrease of 0.0019 crimes per percentage increase in humidity, and is not significant (p = 0.919)*
+-   *Wind Speed (0.0414): A 1 km/h increase in wind speed is associated with an increase of 0.0414 crimes per day, but this effect is not significant (p = 0.446)*
+
+**2. Statistical Significance**
+
+-   None of the predictors are statistically significant, as **all p-values are greater than 0.05**. This means we cannot confidently conclude that temperature, feels-like temperature, humidity, or wind speed have a real impact on crime count in this dataset
+-   The **F-statistic = 3.29** and **p = 0.01075** suggest that, as a group, these weather variables do have some influence on crime count, but the individual effects are weak
+
+**3. Goodness of Fit (R-squared)**
+
+-   The **Multiple R-squared = 0.00896** suggest that only 0.90% of the variance in crime count is explained by these weather factors
+-   The **Adjusted R-squared = 0.00624** means after adjusting for the number of predictors, the explanatory power remains very low
+-   This means the model has very poor predictive ability, suggesting that other unmeasured factors are driving crime rates
+
+**4. Residual Analysis**
+
+-   The **Residual Standard Error = 10.21** shows that the model's predictions deviate from actual crime counts by about ±10 crimes per day on average
+-   The **Residuals range from -25.94 to 59.61** indicates that actual crime counts can vary widely around the predicted values
+
+**5. Conclusion**
+
+-   None of the weather variables have a statistically significant impact on crime count. In the first regression (where crime count was only predicted by temperature), temperature was statistically significant with p = 0.00117. However, in the multiple regression (including feels-like temperature, humidity, and wind speed), temperature is no longer significant (p = 0.211)
+-   The model explains less than 1% of the variance in crime count, meaning it lacks predictive power
+
+### Should we include the variable `temp` and `feelslike` at the same time? Why or why not?
+
+The **feelslike (perceived temperature)** is not a completely independent variable—it is calculated based on **temp (actual temperature)**, along with *humidity* and wind **speed**.
+
+-   Different weather agencies use slightly different formulas, but generally, the heat index (for hot weather) and the wind chill index (for cold weather) are used
+-   In hot weather: High **humidity** makes it feel hotter because sweat evaporates more slowly, therefore, **feelslike** is higher than **temp** when **humidity** is high
+-   In cold weather: High **windspeed** makes it feel colder because it increases heat loss from the skin, therfore, **feelslike** is lower than **temp** when **windspeed** is high
+
+Considering that, we should not include both **temp** and **feelslike** in the same regression model. \*Since the two variables are highly correlated (**feelslike** is mathematically derived from **temp**, **humidity**, and **windspeed**), including both **temp** and **feelslike** in a regression model can cause multicollinearity (high correlation between independent variables).
+
+-   Multicollinearity distorts coefficient estimates
+-   When two variables are strongly correlated, the model struggles to determine their individual effects, making their coefficients unstable and less reliable
+-   In this analysis, **feelslike** is derived from **temp** using **humidity** and **windspeed**, meaning they provide redundant information.
+
+We saw this in the regression results: when both variables **temp** and **feelslike** were included, neither was statistically significant (p-values \> 0.05). This happens because their shared variance causes the model to distribute the explanatory power between them, weakening their individual effects.
+
+High correlation also leads to inflated standard errors for both variables, reducing our confidence in their estimated effects.
+
+### Is it causal now?
+
+The analysis shows that weather variables and crime count are correlated, but not causal
+
+-   The relationship is not statistically significant for temperature (p = 0.211) or other weather factors
+-   The model explains only 0.62% of crime variability (R² ≈ 0.0062), meaning weather alone is a weak predictor
+
+## Further graph and analysis
+
+### 🗺📍 Distribution of Homicide in the Los Angeles area using (1) ggplot and (2) ggmap & stadiamaps
+
+Using map plot to geographically represent the distribution of homicide in the Los Angeles area (Location: California county, United States of America)
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(usmap)
+library(maps)
+library(mapdata)
+library(ggplot2)
+library(dplyr)
+
+```
+
+```{r}
+
+#Plot the map of California county
+usa_county <- map_data("county") 
+usa_county_map <- usa_county %>%
+  rename(longitude = long,
+         latitude = lat)
+california <- subset(usa_county_map, region=="california")
+
+#Filter the dataset to select only homicide crimes
+dataset_homicide <- dataset_crime_cleaned[dataset_crime_cleaned$category == "HOMICIDE", ]
+
+#Merge homicide dataset with map of California by geographic coordinates
+mapdata <- left_join(california, dataset_homicide, by = c("longitude", "latitude"))
+
+#Plot the map of distribution of homicide in Los Angeles area
+ggplot(mapdata, aes(x = longitude, y = latitude, group = group)) +
+    geom_polygon(data = california, aes(x = longitude, y = latitude, group = group),
+                   color = "black", linewidth = 0.2, fill = "white") +
+    geom_point(data = dataset_homicide, aes(x = longitude, y = latitude, group = NULL), 
+               fill = "red", color = "black", shape = 21, size = 2) +
+  
+    #Limit the area to Los Angeles
+    coord_cartesian(xlim = c(-119.5, -117.0), ylim = c(33.7, 34.4)) +
+  
+    labs(title = "Distribution of Homicide in Los Angeles Area",
+         x = "",
+         y = "",
+         color = "") +
+    
+    theme_minimal()
+
+```
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+library(sf)
+
+```
+
+```{r}
+
+register_stadiamaps(key = "c9527f0a-1729-42db-ac61-8dfe590e5e5f")
+
+# Define bounding box for Los Angeles
+la_bbox <- c(left = -118.75, bottom = 33.7, right = -118.0, top = 34.4)
+
+# Get OpenStreetMap tile for the Los Angeles area from Stadia Maps
+la_map <- get_stadiamap(bbox = la_bbox, zoom = 11, maptype = "stamen_toner_lite")
+
+# Filter dataset to select only homicide crimes in Los Angeles
+dataset_homicide <- dataset_crime_cleaned %>%
+  filter(category == "HOMICIDE") %>%
+  filter(longitude >= la_bbox["left"] & longitude <= la_bbox["right"], 
+         latitude >= la_bbox["bottom"] & latitude <= la_bbox["top"])
+
+# Plot the detailed street map with homicide locations
+ggmap(la_map) +
+  geom_point(data = dataset_homicide, aes(x = longitude, y = latitude), 
+             fill = "red", color = "black", shape = 21, size = 2) +
+  labs(title = "Distribution of Homicide in Los Angeles Area",
+       x = "",
+       y = "") +
+  theme_minimal() 
+
+```
+
+### 🌍📈 Distribution of Top 8 most committed crimes in Los Angeles using interactive map in plotly
+
+```{r}
+
+install.packages("plotly")
+library(plotly)
+
+```
+
+```{r}
+
+# Count the occurrences for each crime category and filter the top 8
+top_8_crimes <- dataset_crime_cleaned %>%
+  count(category) %>%
+  arrange(desc(n)) %>%
+  head(8)
+
+# Extract the category names from top_8_crimes
+top_8_categories <- top_8_crimes$category
+
+# Filter the original dataset for only these top 8 categories
+df <- dataset_crime_cleaned %>%
+  filter(category %in% top_8_categories)
+
+m <- list(colorbar = list(title = "category"))
+
+# Set up map layout
+g <- list(
+  scope = 'america',
+  showland = TRUE,
+  landcolor = toRGB("grey83"),
+  subunitcolor = toRGB("white"),
+  countrycolor = toRGB("white"),
+  showlakes = TRUE,
+  lakecolor = toRGB("white"),
+  showsubunits = TRUE,
+  showcountries = TRUE,
+  resolution = 50,
+  projection = list(
+    type = 'conic conformal',
+    rotation = list(lon = -118.25)
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(-119, -117.8),
+    dtick = 0.2
+    ),  
+  lataxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(33.5, 34.5),
+    dtick = 0.2
+    )
+)
+
+# Create interactive map
+fig <- plot_geo(df, lat = ~latitude, lon = ~longitude, color = ~category) 
+
+# Add crime markers
+fig <- fig %>% add_markers(
+  text = ~paste("Crime:", df$category, "<br>Description:", df$crime_code_description, "<br>Location", df$area_name),  
+  hoverinfo = "text")
+
+# Final layout
+fig <- fig %>% layout(title = "Crime Distribution in Los Angeles (Hover for Details)", geo = g)
+
+fig
+
+```
+
+## Thank you for reading! 🕵️️🔍📝🚔🚨📊📈
+
+
